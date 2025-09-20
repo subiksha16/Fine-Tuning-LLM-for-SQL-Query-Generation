@@ -39,20 +39,7 @@ pip install -r requirements.txt
 adapters/       # fine-tuned model adapters
 data/           # train.jsonl, valid.jsonl, test.jsonl
 ```
-4. Fine-Tuning the Model
-Fine-tune the LLM using MLX-LM LoRA:
-```bash
-python -m mlx_lm.lora \
-  --model mlx-community/Ministral-8B-Instruct-2410-4bit \
-  --train \
-  --data data/ \
-  --fine-tune-type lora \
-  --batch-size 4 \
-  --num-layers 16 \
-  --iters 150 \
-  --adapter-path adapters
-  ```
-5. Running the API
+4. Running the API
 Start the FastAPI backend:
 ```bash
 uvicorn app:app --reload
