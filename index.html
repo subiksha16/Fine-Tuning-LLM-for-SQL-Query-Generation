@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English to SQL Translator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex: 1;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .query-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 20px;
+            border: 2px solid #e0e6ed;
+            border-radius: 12px;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .query-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 auto;
+            min-width: 200px;
+            justify-content: center;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .loading.active {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+            animation: slideInUp 0.5s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #059669;
+        }
+
+        .sql-output {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .sql-output code {
+            color: #f8f8f2;
+            font-family: 'Fira Code', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+            animation: slideInUp 0.5s ease-out;
+        }
+
+        .examples {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .examples h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .example-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .example-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: #4ecdc4;
+            text-decoration: none;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .main-card {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .result-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-database"></i> SQL Translator</h1>
+            <p>Transform natural language into powerful SQL queries with AI</p>
+        </div>
+
+        <div class="main-card">
+            <div class="input-section">
+                <label class="input-label">
+                    <i class="fas fa-comments"></i>
+                    Enter your query in plain English
+                </label>
+                <textarea 
+                    class="query-textarea" 
+                    placeholder="e.g., Show me all customers who spent more than $500 last month"
+                    id="queryInput"
+                ></textarea>
+            </div>
+
+            <button class="generate-btn" id="generateBtn">
+                <i class="fas fa-magic" id="generateIcon"></i>
+                <i class="fas fa-spinner loading" id="loadingIcon"></i>
+                <span id="btnText">Generate SQL</span>
+            </button>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-header">
+                    <h3 class="result-title">
+                        <i class="fas fa-code"></i>
+                        Generated SQL Query
+                    </h3>
+                    <button class="copy-btn" id="copyBtn">
+                        <i class="fas fa-copy"></i>
+                        Copy SQL
+                    </button>
+                </div>
+                <div class="sql-output">
+                    <pre><code id="sqlCode" class="language-sql"></code></pre>
+                </div>
+            </div>
+
+            <div class="error-message" id="errorMessage">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <div class="examples">
+                <h3><i class="fas fa-lightbulb"></i> Example Queries</h3>
+                <div class="example-item" onclick="useExample('Show me all customers who made orders in the last 30 days')">
+                    Show me all customers who made orders in the last 30 days
+                </div>
+                <div class="example-item" onclick="useExample('Find products with inventory less than 10 units')">
+                    Find products with inventory less than 10 units
+                </div>
+                <div class="example-item" onclick="useExample('Get the top 5 best-selling products by revenue')">
+                    Get the top 5 best-selling products by revenue
+                </div>
+                <div class="example-item" onclick="useExample('List employees hired in 2023 with salary greater than 50000')">
+                    List employees hired in 2023 with salary greater than 50000
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Built with <i class="fas fa-heart" style="color: #ff6b6b;"></i> using FastAPI + MLX-LM | 
+            <a href="#" target="_blank">View on GitHub</a></p>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <i class="fas fa-check"></i>
+        SQL copied to clipboard!
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script>
+        const queryInput = document.getElementById('queryInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const resultSection = document.getElementById('resultSection');
+        const sqlCode = document.getElementById('sqlCode');
+        const copyBtn = document.getElementById('copyBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const generateIcon = document.getElementById('generateIcon');
+        const loadingIcon = document.getElementById('loadingIcon');
+        const btnText = document.getElementById('btnText');
+        const toast = document.getElementById('toast');
+
+        generateBtn.addEventListener('click', async () => {
+            const query = queryInput.value.trim();
+            
+            if (!query) {
+                showError('Please enter a query before generating SQL.');
+                return;
+            }
+
+            setLoading(true);
+            hideError();
+            hideResult();
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: query })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.sql) {
+                    showResult(data.sql);
+                } else {
+                    throw new Error('No SQL generated');
+                }
+
+            } catch (error) {
+                showError(`Error generating SQL: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(sqlCode.textContent);
+                showToast();
+            } catch (error) {
+                console.error('Failed to copy text: ', error);
+            }
+        });
+
+        queryInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                generateBtn.click();
+            }
+        });
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                generateBtn.disabled = true;
+                generateIcon.style.display = 'none';
+                loadingIcon.classList.add('active');
+                btnText.textContent = 'Generating...';
+            } else {
+                generateBtn.disabled = false;
+                generateIcon.style.display = 'inline-block';
+                loadingIcon.classList.remove('active');
+                btnText.textContent = 'Generate SQL';
+            }
+        }
+
+        function showResult(sql) {
+            sqlCode.textContent = sql;
+            Prism.highlightElement(sqlCode);
+            resultSection.classList.add('active');
+        }
+
+        function hideResult() {
+            resultSection.classList.remove('active');
+        }
+
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.add('active');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('active');
+        }
+
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function useExample(example) {
+            queryInput.value = example;
+            queryInput.focus();
+        }
+
+        // Add some keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideError();
+                hideResult();
+            }
+        });
+    </script>
+</body>
+</html>
